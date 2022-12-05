@@ -1,0 +1,30 @@
+FROM mcr.microsoft.com/devcontainers/php:0-8-bullseye
+
+# Install MariaDB client
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get install -y mariadb-client \ 
+    && apt-get install -y vim \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# PhpMyAdmin
+RUN curl https://files.phpmyadmin.net/phpMyAdmin/5.2.0/phpMyAdmin-5.2.0-english.tar.gz -o /opt/phpmyadmin.tar.gz
+RUN gzip -d /opt/phpmyadmin.tar.gz
+RUN tar -xf /opt/phpmyadmin.tar -C /opt/
+RUN mv /opt/phpMyAdmin-5.2.0-english /opt/phpmyadmin
+RUN chmod -R 755 /opt/phpmyadmin
+RUN rm /opt/phpmyadmin.tar
+
+RUN mkdir -p /opt/phpmyadmin/tmp
+RUN chmod -R 777 /opt/phpmyadmin/tmp
+
+RUN cp /opt/phpmyadmin/config.sample.inc.php /opt/phpmyadmin/config.inc.php
+
+# Install php-mysql driver
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+
+COPY phpmyadmin.conf /etc/apache2/sites-enabled
+COPY config.inc.php /opt/phpmyadmin
+
+EXPOSE 8080
+
+CMD apachectl -DFOREGROUND
